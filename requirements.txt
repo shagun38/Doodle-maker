@@ -1,0 +1,5 @@
+opencv-python 
+PyOpenGL 
+PyQt5  # or tkinter / customtkinter 
+numpy 
+matplotlib 
