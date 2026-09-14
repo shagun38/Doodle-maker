@@ -1,13 +1,32 @@
-import cv2 
-import numpy as np 
-# Load dummy or sample image 
-img = np.zeros((300, 300, 3), dtype=np.uint8) 
-cv2.putText(img, 'Sruthi', (20, 150),  
-cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2) 
-# Apply a basic baseline operation 
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) 
-edges = cv2.Canny(gray, 100, 200) 
-# Display to confirm GUI window rendering 
-cv2.imshow('sruthi', edges) 
-cv2.waitKey(0) 
+import cv2
+from processing.image_input import load_image
+from processing.preprocessing import preprocess_image
+from processing.extraction import extract_foreground
+
+image_path = "test1.jpeg"
+
+image_data = load_image(image_path)
+image = image_data["image"]
+
+# print("image loaded successfully")
+# print(f"width = {image_data['width']}")
+# print(f"height = {image_data['height']}")
+# print(f"channels = {image_data['channels']}")
+# print(f"format = {image_data['format']}")
+
+preprocessed_image = preprocess_image(image)
+
+
+
+extraction_data = extract_foreground(preprocessed_image)
+# get the binary mask
+mask = extraction_data["mask"]
+threshold = extraction_data["threshold"]
+
+print(f"otsu threshold = {threshold}")
+
+# cv2.imshow("original image",image)
+# cv2.imshow("preprocessed image",preprocessed_image)
+cv2.imshow("foreground mask",mask)
+cv2.waitKey(0)
 cv2.destroyAllWindows()
