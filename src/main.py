@@ -3,7 +3,7 @@ from processing.image_input import load_image
 from processing.preprocessing import preprocess_image
 from processing.extraction import extract_foreground
 
-image_path = "test1.jpeg"
+image_path = "./test-images/test7.jpeg"
 
 image_data = load_image(image_path)
 image = image_data["image"]
@@ -14,19 +14,12 @@ image = image_data["image"]
 # print(f"channels = {image_data['channels']}")
 # print(f"format = {image_data['format']}")
 
-preprocessed_image = preprocess_image(image)
+preprocessed_data = preprocess_image(image)
+color_image = preprocessed_data["color"]
+grayscale_image = preprocessed_data["grayscale"]
+cv2.imshow("original image",image)
+cv2.imshow("processed color image",color_image)
+cv2.imshow("grayscale image",grayscale_image)
 
-
-
-extraction_data = extract_foreground(preprocessed_image)
-# get the binary mask
-mask = extraction_data["mask"]
-threshold = extraction_data["threshold"]
-
-print(f"otsu threshold = {threshold}")
-
-# cv2.imshow("original image",image)
-# cv2.imshow("preprocessed image",preprocessed_image)
-cv2.imshow("foreground mask",mask)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
