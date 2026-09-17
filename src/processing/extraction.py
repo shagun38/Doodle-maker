@@ -1,13 +1,26 @@
+# extraction.py
+
 import cv2
-def extract_foreground(preprocessed_image):
-    # check that a preprocessed image was provided
-    if preprocessed_image is None:
-        raise ValueError("preprocessed image cannot be none")
 
-    # use otsu's method to automatically determine the threshold
-    threshold_value, mask = cv2.threshold(preprocessed_image,0,255,cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
+def extract_foreground(grayscale_image):
+    if grayscale_image is None:
+        raise ValueError("grayscale image cannot be none")
+
+    if len(grayscale_image.shape) != 2:
+        raise ValueError(
+            "extract_foreground expects a grayscale image"
+        )
+
+    block_size = 31
+    constant = 10
+
+    # create the foreground mask
+    mask = cv2.adaptiveThreshold(grayscale_image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,block_size,constant)
+
+    # return the mask and parameters used
     return {
         "mask": mask,
-        "threshold": threshold_value
+        "block_size": block_size,
+        "constant": constant
     }
