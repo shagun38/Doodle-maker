@@ -4,6 +4,7 @@ from processing.preprocessing import (preprocess_image,suppress_paper_texture)
 from processing.extraction import extract_foreground
 from processing.cleaning import (remove_small_components)
 from processing.contours import detect_contours
+from processing.simplification import simplify_contours
 
 def show_image(window_name, image, max_width=600, max_height=500):
     height, width = image.shape[:2]
@@ -14,7 +15,7 @@ def show_image(window_name, image, max_width=600, max_height=500):
     cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
     cv2.imshow(window_name,resized_image)
 
-image_path = "./test-images/test8.jpeg"
+image_path = "./test-images/test7.jpeg"
 
 image_data = load_image(image_path)
 image = image_data["image"]
@@ -41,6 +42,26 @@ contour_data = detect_contours(cleaned_mask)
 contours = contour_data["contours"]
 contour_image = color_image.copy()
 cv2.drawContours(contour_image,contours,-1,(0, 0, 255),2)
+
+simplified_contours = simplify_contours(contours)
+
+print(f"Original contours: {len(contours)}")
+print(f"Simplified contours: {len(simplified_contours)}")
+simplified_image = color_image.copy()
+
+cv2.drawContours(
+    simplified_image,
+    simplified_contours,
+    -1,
+    (0, 0, 255),
+    2
+)
+
+show_image(
+    "simplified contours",
+    simplified_image
+)
+
 show_image("detected contours", contour_image)
 print(f"Number of contours: {len(contours)}")
 
