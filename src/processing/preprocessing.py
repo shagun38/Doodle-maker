@@ -52,3 +52,15 @@ def preprocess_image(image):
         "color": corrected_color,
         "grayscale": corrected_grayscale
     }
+
+def suppress_paper_texture(gray):
+    if gray is None:
+        raise ValueError("gray image cannot be None")
+
+    # Estimate the large-scale paper background.
+    background = cv2.GaussianBlur(gray,(0, 0),sigmaX=15)
+
+    # Remove the estimated background.
+    normalized = cv2.divide(gray,background,scale=255)
+
+    return normalized

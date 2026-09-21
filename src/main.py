@@ -1,8 +1,9 @@
 import cv2
 from processing.image_input import load_image
-from processing.preprocessing import preprocess_image
+from processing.preprocessing import (preprocess_image,suppress_paper_texture)
 from processing.extraction import extract_foreground
 from processing.cleaning import (remove_small_components)
+from processing.contours import detect_contours
 
 def show_image(window_name, image, max_width=600, max_height=500):
     height, width = image.shape[:2]
@@ -28,18 +29,29 @@ preprocessed_data = preprocess_image(image)
 color_image = preprocessed_data["color"]
 grayscale_image = preprocessed_data["grayscale"]
 
+texture_suppressed = suppress_paper_texture(grayscale_image)
+
+
 extraction_data = extract_foreground(grayscale_image)
 mask = extraction_data["mask"]
 
 cleaned_mask = remove_small_components(mask,min_area=20)
+
+contour_data = detect_contours(cleaned_mask)
+contours = contour_data["contours"]
+contour_image = color_image.copy()
+cv2.drawContours(contour_image,contours,-1,(0, 0, 255),2)
+show_image("detected contours", contour_image)
+print(f"Number of contours: {len(contours)}")
+
 
 
 # show_image("original image", image)
 # show_image("processed color image", color_image)
 # show_image("grayscale image", grayscale_image)
 # show_image("doodle mask", mask)
-show_image("cleaned mask", cleaned_mask)
-
+#show_image("cleaned mask", cleaned_mask)
+show_image("texture suppressed",texture_suppressed)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
