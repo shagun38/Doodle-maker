@@ -5,6 +5,7 @@ from processing.extraction import extract_foreground
 from processing.cleaning import (remove_small_components)
 from processing.contours import detect_contours
 from processing.simplification import simplify_contours
+from processing.vectorization import vectorize_contours
 
 def show_image(window_name, image, max_width=600, max_height=500):
     height, width = image.shape[:2]
@@ -15,7 +16,7 @@ def show_image(window_name, image, max_width=600, max_height=500):
     cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
     cv2.imshow(window_name,resized_image)
 
-image_path = "./test-images/test7.jpeg"
+image_path = "./test-images/test9.jpeg"
 
 image_data = load_image(image_path)
 image = image_data["image"]
@@ -45,34 +46,30 @@ cv2.drawContours(contour_image,contours,-1,(0, 0, 255),2)
 
 simplified_contours = simplify_contours(contours)
 
-print(f"Original contours: {len(contours)}")
-print(f"Simplified contours: {len(simplified_contours)}")
+# print(f"Original contours: {len(contours)}")
+# print(f"Simplified contours: {len(simplified_contours)}")
 simplified_image = color_image.copy()
 
-cv2.drawContours(
-    simplified_image,
-    simplified_contours,
-    -1,
-    (0, 0, 255),
-    2
-)
+cv2.drawContours(simplified_image,simplified_contours,-1,(0, 0, 255),2)
+# print(f"Number of contours: {len(contours)}")
 
-show_image(
-    "simplified contours",
-    simplified_image
-)
+simplified_contours = simplify_contours(contours)
+vectors = vectorize_contours(simplified_contours)
 
-show_image("detected contours", contour_image)
-print(f"Number of contours: {len(contours)}")
+print(f"Number of vectors: {len(vectors)}")
 
-
+if vectors:
+    print("First vector:")
+    print(vectors[0])
 
 # show_image("original image", image)
 # show_image("processed color image", color_image)
 # show_image("grayscale image", grayscale_image)
 # show_image("doodle mask", mask)
-#show_image("cleaned mask", cleaned_mask)
-show_image("texture suppressed",texture_suppressed)
+show_image("cleaned mask", cleaned_mask)
+# show_image("texture suppressed",texture_suppressed)
+# show_image("simplified contours",simplified_image)
+show_image("detected contours", contour_image)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
