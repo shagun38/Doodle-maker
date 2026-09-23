@@ -6,8 +6,8 @@ from processing.cleaning import (remove_small_components)
 # from processing.contours import detect_contours
 from processing.simplification import simplify_contours
 from processing.vectorization import vectorize_contours
-from processing.components import group_vectors
-from processing.skeleton import (skeletonize_mask,clean_skeleton , close_skeleton_gaps)
+# from processing.components import group_vectors
+from processing.skeleton import (skeletonize_mask,clean_skeleton , close_mask_gaps)
 from processing.path_tracing import (analyze_skeleton, trace_skeleton_paths)
 
 
@@ -27,16 +27,16 @@ image = image_data["image"]
 
 
 preprocessed_data = preprocess_image(image)
-color_image = preprocessed_data["color"]
+# color_image = preprocessed_data["color"]
 grayscale_image = preprocessed_data["grayscale"]
 
-texture_suppressed = suppress_paper_texture(grayscale_image)
+# texture_suppressed = suppress_paper_texture(grayscale_image)
 
 extraction_data = extract_foreground(grayscale_image)
 mask = extraction_data["mask"]
 
 cleaned_mask = remove_small_components(mask,min_area=100)
-closed_mask = close_skeleton_gaps(cleaned_mask,kernel_size=5)
+closed_mask = close_mask_gaps(cleaned_mask,kernel_size=5)
 
 skeleton = skeletonize_mask(closed_mask)
 cleaned_skeleton = clean_skeleton(skeleton,min_component_size=10)

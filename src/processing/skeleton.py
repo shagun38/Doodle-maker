@@ -49,7 +49,7 @@ def clean_skeleton(skeleton, min_component_size=10):
     return cleaned
 
 
-def close_skeleton_gaps(mask, kernel_size=3):
+def close_mask_gaps(mask, kernel_size=3):
     if mask is None:
         raise ValueError("mask cannot be None")
 

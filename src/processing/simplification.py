@@ -10,9 +10,6 @@ def simplify_contours(contours, epsilon_ratio=0.01):
     for contour in contours:
         if len(contour) < 3:
             continue
-
-        perimeter = cv2.arcLength(contour, True)
-
         epsilon = 0.01
 
         simplified = cv2.approxPolyDP(
