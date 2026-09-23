@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 
-def remove_small_components(mask, min_area=50):
+def remove_small_components(mask, min_area=100):
     # check that a mask was provided
     if mask is None:
         raise ValueError("mask cannot be none")
