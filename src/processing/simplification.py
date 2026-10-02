@@ -1,23 +1,42 @@
 import cv2
+import numpy as np
 
 
-def simplify_contours(contours, epsilon_ratio=0.01):
-    if contours is None:
-        raise ValueError("contours cannot be None")
+def simplify_paths(paths, epsilon_ratio=0.01):
+    if paths is None:
+        raise ValueError("paths cannot be None")
 
-    simplified_contours = []
+    simplified_paths = []
 
-    for contour in contours:
-        if len(contour) < 3:
+    for path in paths:
+        if path is None or len(path) < 2:
             continue
-        epsilon = 0.01
 
-        simplified = cv2.approxPolyDP(
-            contour,
-            epsilon,
-            True
+        points = np.array(
+            path,
+            dtype=np.int32
+        ).reshape(-1, 1, 2)
+
+        perimeter = cv2.arcLength(
+            points,
+            False
         )
 
-        simplified_contours.append(simplified)
+        epsilon = epsilon_ratio * perimeter
 
-    return simplified_contours
+        simplified = cv2.approxPolyDP(
+            points,
+            epsilon,
+            False
+        )
+
+        simplified_path = (
+            simplified.reshape(-1, 2).tolist()
+        )
+
+        if len(simplified_path) >= 2:
+            simplified_paths.append(
+                simplified_path
+            )
+
+    return simplified_paths

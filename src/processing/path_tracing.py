@@ -25,410 +25,115 @@ def get_neighbors(point, skeleton):
     return neighbors
 
 
-def build_skeleton_graph(skeleton):
+def trace_skeleton_paths(skeleton):
     if skeleton is None:
-        raise ValueError("skeleton cannot be None")
+        raise ValueError(
+            "skeleton cannot be None"
+        )
 
     if len(skeleton.shape) != 2:
         raise ValueError(
             "skeleton must be a single-channel image"
         )
 
-    graph = {}
+    number_of_labels, labels, _, _ = (
+        cv2.connectedComponentsWithStats(
+            skeleton,
+            connectivity=8
+        )
+    )
+
+    paths = []
 
     height, width = skeleton.shape
 
-    for y in range(height):
-        for x in range(width):
+    for label in range(1, number_of_labels):
 
-            if skeleton[y, x] == 0:
-                continue
+        component_points = []
 
-            point = (x, y)
+        for y in range(skeleton.shape[0]):
+            for x in range(skeleton.shape[1]):
+                if labels[y, x] == label:
+                    component_points.append((x, y))
 
-            neighbors = get_neighbors(
-                point,
-                skeleton
-            )
-
-            graph[point] = neighbors
-
-    return graph
-
-
-def classify_graph_points(graph):
-    endpoints = []
-    normal_points = []
-    junctions = []
-
-    for point, neighbors in graph.items():
-        degree = len(neighbors)
-
-        if degree == 1:
-            endpoints.append(point)
-
-        elif degree == 2:
-            normal_points.append(point)
-
-        elif degree >= 3:
-            junctions.append(point)
-
-    return {
-        "endpoints": endpoints,
-        "normal_points": normal_points,
-        "junctions": junctions
-    }
-
-
-def analyze_skeleton(skeleton):
-    graph = build_skeleton_graph(skeleton)
-
-    classification = classify_graph_points(graph)
-
-    junction_clusters = cluster_junctions(
-        classification["junctions"]
-    )
-
-    logical_junctions = merge_nearby_junctions(
-        junction_clusters,
-        merge_distance=10
-    )
-
-    return {
-        "graph": graph,
-        "endpoints": classification["endpoints"],
-        "normal_points": classification["normal_points"],
-        "junctions": classification["junctions"],
-        "junction_clusters": junction_clusters,
-        "logical_junctions": logical_junctions
-    }
-
-def cluster_junctions(junctions):
-    if junctions is None:
-        raise ValueError("junctions cannot be None")
-
-    junctions = set(junctions)
-    clusters = []
-
-    while junctions:
-        start = junctions.pop()
-
-        cluster = {start}
-        stack = [start]
-
-        while stack:
-            current = stack.pop()
-
-            x, y = current
-
-            nearby = []
-
-            for dx, dy in NEIGHBOR_OFFSETS:
-                neighbor = (x + dx, y + dy)
-
-                if neighbor in junctions:
-                    nearby.append(neighbor)
-
-            for neighbor in nearby:
-                junctions.remove(neighbor)
-                cluster.add(neighbor)
-                stack.append(neighbor)
-
-        clusters.append(cluster)
-
-    return clusters
-
-def get_cluster_center(cluster):
-    if not cluster:
-        return None
-
-    x_sum = sum(point[0] for point in cluster)
-    y_sum = sum(point[1] for point in cluster)
-
-    center_x = x_sum / len(cluster)
-    center_y = y_sum / len(cluster)
-
-    return min(
-        cluster,
-        key=lambda point: (
-            (point[0] - center_x) ** 2
-            + (point[1] - center_y) ** 2
-        )
-    )
-
-
-def merge_nearby_junctions(
-    junction_clusters,
-    merge_distance=10
-):
-    if junction_clusters is None:
-        raise ValueError(
-            "junction_clusters cannot be None"
-        )
-
-    if not junction_clusters:
-        return []
-
-    centers = [
-        get_cluster_center(cluster)
-        for cluster in junction_clusters
-    ]
-
-    merged = []
-    visited = set()
-
-    for i in range(len(junction_clusters)):
-
-        if i in visited:
+        if not component_points:
             continue
 
-        stack = [i]
-        visited.add(i)
+        remaining = set(component_points)
 
-        merged_clusters = []
+        while remaining:
 
-        while stack:
-            current = stack.pop()
+            start = next(iter(remaining))
 
-            merged_clusters.append(
-                junction_clusters[current]
-            )
+            path = [start]
+            remaining.remove(start)
 
-            current_center = centers[current]
+            current = start
+            previous = None
 
-            for j in range(len(junction_clusters)):
+            while True:
 
-                if j in visited:
-                    continue
-
-                other_center = centers[j]
-
-                dx = (
-                    current_center[0]
-                    - other_center[0]
+                neighbors = get_neighbors(
+                    current,
+                    skeleton
                 )
 
-                dy = (
-                    current_center[1]
-                    - other_center[1]
-                )
+                candidates = [
+                    point
+                    for point in neighbors
+                    if point != previous
+                    and point in remaining
+                ]
 
-                distance = (dx * dx + dy * dy) ** 0.5
+                if not candidates:
+                    break
 
-                if distance <= merge_distance:
-                    visited.add(j)
-                    stack.append(j)
+                if previous is None or len(candidates) == 1:
+                    next_point = candidates[0]
 
-        merged_pixels = set()
+                else:
+                    previous_x, previous_y = previous
+                    current_x, current_y = current
 
-        for cluster in merged_clusters:
-            merged_pixels.update(cluster)
+                    direction_x = (
+                        current_x - previous_x
+                    )
+                    direction_y = (
+                        current_y - previous_y
+                    )
 
-        merged.append({
-            "pixels": merged_pixels,
-            "center": get_cluster_center(
-                merged_pixels
-            )
-        })
+                    next_point = min(
+                        candidates,
+                        key=lambda point: (
+                            (
+                                point[0]
+                                - current_x
+                                - direction_x
+                            ) ** 2
+                            +
+                            (
+                                point[1]
+                                - current_y
+                                - direction_y
+                            ) ** 2
+                        )
+                    )
 
-    return merged
+                previous = current
+                current = next_point
 
+                path.append(current)
+                remaining.remove(current)
 
-def get_logical_junction_map(logical_junctions):
-    junction_map = {}
-
-    for index, junction in enumerate(logical_junctions):
-        for point in junction["pixels"]:
-            junction_map[point] = index
-
-    return junction_map
-
-
-def get_graph_nodes(
-    graph,
-    endpoints,
-    logical_junctions
-):
-    nodes = set(endpoints)
-
-    for junction in logical_junctions:
-        nodes.add(junction["center"])
-
-    return nodes
-
-
-def trace_path(
-    start,
-    first_neighbor,
-    graph,
-    node_map,
-    visited_edges
-):
-    path = [start, first_neighbor]
-
-    previous = start
-    current = first_neighbor
-
-    while True:
-
-        edge = tuple(sorted((previous, current)))
-        visited_edges.add(edge)
-
-        if current in node_map and current != start:
-            break
-
-        neighbors = graph.get(current, [])
-
-        next_points = [
-            point
-            for point in neighbors
-            if point != previous
-            and tuple(sorted((current, point)))
-            not in visited_edges
-        ]
-
-        if not next_points:
-            break
-
-        next_point = next_points[0]
-
-        previous = current
-        current = next_point
-
-        path.append(current)
-
-    return path
-
-def build_junction_pixel_map(logical_junctions):
-    junction_map = {}
-
-    for junction_id, junction in enumerate(logical_junctions):
-        for pixel in junction["pixels"]:
-            junction_map[pixel] = junction_id
-
-    return junction_map
-
-def trace_path_from_node(
-    start,
-    first_neighbor,
-    graph,
-    junction_map,
-    endpoint_set,
-    visited_edges
-):
-    path = [start]
-
-    previous = start
-    current = first_neighbor
-
-    while True:
-        path.append(current)
-
-        edge = tuple(sorted((previous, current)))
-        visited_edges.add(edge)
-
-        # Stop when we reach another logical junction.
-        if current in junction_map:
-            break
-
-        # Stop when we reach an endpoint.
-        if current in endpoint_set:
-            break
-
-        neighbors = graph.get(current, [])
-
-        next_points = []
-
-        for neighbor in neighbors:
-            edge = tuple(sorted((current, neighbor)))
-
-            if neighbor != previous and edge not in visited_edges:
-                next_points.append(neighbor)
-
-        if not next_points:
-            break
-
-        # A normal skeleton point should have one
-        # forward direction.
-        next_point = next_points[0]
-
-        previous = current
-        current = next_point
-
-    return path
-
-def trace_skeleton_paths(
-    skeleton,
-    graph,
-    endpoints,
-    logical_junctions
-):
-    if skeleton is None:
-        raise ValueError("skeleton cannot be None")
-
-    junction_map = build_junction_pixel_map(
-        logical_junctions
-    )
-
-    endpoint_set = set(endpoints)
-
-    visited_edges = set()
-    paths = []
-
-    # --------------------------------------------------
-    # Phase 1: endpoint -> junction/endpoint
-    # --------------------------------------------------
-
-    for start in endpoints:
-
-        neighbors = graph.get(start, [])
-
-        for neighbor in neighbors:
-
-            edge = tuple(sorted((start, neighbor)))
-
-            if edge in visited_edges:
-                continue
-
-            path = trace_path_from_node(
-                start,
-                neighbor,
-                graph,
-                junction_map,
-                endpoint_set,
-                visited_edges
+            touches_border = any(
+                x == 0
+                or y == 0
+                or x == width - 1
+                or y == height - 1
+                for x, y in path
             )
 
-            if len(path) >= 2:
+            if len(path) >= 5 and not touches_border:
                 paths.append(path)
-
-    # --------------------------------------------------
-    # Phase 2: junction -> junction/endpoint
-    # --------------------------------------------------
-
-    for junction in logical_junctions:
-
-        for start in junction["pixels"]:
-
-            neighbors = graph.get(start, [])
-
-            for neighbor in neighbors:
-
-                edge = tuple(sorted((start, neighbor)))
-
-                if edge in visited_edges:
-                    continue
-
-                path = trace_path_from_node(
-                    start,
-                    neighbor,
-                    graph,
-                    junction_map,
-                    endpoint_set,
-                    visited_edges
-                )
-
-                if len(path) >= 2:
-                    paths.append(path)
 
     return paths
