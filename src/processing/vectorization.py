@@ -1,21 +1,20 @@
-def vectorize_contours(contours):
-    if contours is None:
-        raise ValueError("contours cannot be None")
+VECTOR_WIDTH =3
+
+
+def vectorize_paths(paths):
+    if paths is None:
+        raise ValueError("paths cannot be None")
 
     vectors = []
 
-    for contour in contours:
-        if contour is None or len(contour) < 2:
+    for path in paths:
+        if path is None or len(path) < 2:
             continue
 
-        points = contour.reshape(-1, 2)
-
-        vector = {
+        vectors.append({
             "type": "polyline",
-            "points": points.tolist(),
-            "closed": True
-        }
-
-        vectors.append(vector)
+            "points": path,
+            "width": VECTOR_WIDTH
+        })
 
     return vectors
