@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 
 def remove_small_components(mask, min_area=100):
-    # check that a mask was provided
     if mask is None:
         raise ValueError("mask cannot be none")
 
@@ -12,14 +11,8 @@ def remove_small_components(mask, min_area=100):
         )
     
     number_of_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask,connectivity=8)
-    areas = []
-
-    for label in range(1, number_of_labels):
-        area = stats[label, cv2.CC_STAT_AREA]
-        areas.append(area)
-
     cleaned_mask = np.zeros_like(mask)
-
+    
     for label in range(1, number_of_labels):
         area = stats[label, cv2.CC_STAT_AREA]
 

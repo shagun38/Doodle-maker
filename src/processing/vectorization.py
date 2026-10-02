@@ -1,4 +1,4 @@
-VECTOR_WIDTH =3
+VECTOR_WIDTH = 3
 
 
 def vectorize_paths(paths):

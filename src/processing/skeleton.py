@@ -14,11 +14,7 @@ def skeletonize_mask(mask):
     binary = mask.copy()
     binary[binary > 0] = 255
 
-    skeleton = cv2.ximgproc.thinning(
-        binary,
-        thinningType=cv2.ximgproc.THINNING_ZHANGSUEN
-    )
-
+    skeleton = cv2.ximgproc.thinning(binary,thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
     return skeleton
 
 
@@ -34,15 +30,11 @@ def clean_skeleton(skeleton, min_component_size=10):
     cleaned = np.zeros_like(skeleton)
 
     number_of_labels, labels, stats, _ = (
-        cv2.connectedComponentsWithStats(
-            skeleton,
-            connectivity=8
-        )
+        cv2.connectedComponentsWithStats(skeleton,connectivity=8)
     )
 
     for label in range(1, number_of_labels):
         area = stats[label, cv2.CC_STAT_AREA]
-
         if area >= min_component_size:
             cleaned[labels == label] = 255
 
@@ -57,16 +49,7 @@ def close_mask_gaps(mask, kernel_size=3):
         raise ValueError(
             "mask must be a single-channel image"
         )
-
     kernel = cv2.getStructuringElement(
-        cv2.MORPH_CROSS,
-        (kernel_size, kernel_size)
-    )
-
-    closed = cv2.morphologyEx(
-        mask,
-        cv2.MORPH_CLOSE,
-        kernel
-    )
-
+        cv2.MORPH_CROSS,(kernel_size, kernel_size))
+    closed = cv2.morphologyEx(mask,cv2.MORPH_CLOSE,kernel)
     return closed
