@@ -12,7 +12,7 @@ class FirstPage:
         if isinstance(self.root, tk.Tk):
             self.root.title("Vector Trace — Doodle to Vector")
             self.root.geometry("1000x700")
-            self.root.minsize(900, 650)
+            self.root.minsize(1000,700)
 
         self.image = None
         self.preview_image = None

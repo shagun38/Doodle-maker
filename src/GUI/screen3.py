@@ -152,7 +152,7 @@ class Screen3Frame(ttk.Frame):
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Vector Trace — Screen 3")
-    root.geometry("600x500")
+    root.geometry("1000x700")
 
     style = ttk.Style()
     try:
