@@ -4,12 +4,15 @@ from PIL import Image, ImageTk
 import os
 
 
-class VectorTraceApp:
-    def __init__(self, root):
+class FirstPage:
+    def __init__(self, root, controller=None):
         self.root = root
-        self.root.title("Vector Trace — Doodle to Vector")
-        self.root.geometry("1000x700")
-        self.root.minsize(900, 650)
+        self.controller = controller
+        
+        if isinstance(self.root, tk.Tk):
+            self.root.title("Vector Trace — Doodle to Vector")
+            self.root.geometry("1000x700")
+            self.root.minsize(1000,700)
 
         self.image = None
         self.preview_image = None
@@ -81,7 +84,7 @@ class VectorTraceApp:
 
         title = ttk.Label(
             header,
-            text="VECTOR TRACE",
+            text="☆*VectorTrace*☆",
             style="Title.TLabel"
         )
         title.pack(anchor="center")
@@ -306,32 +309,33 @@ class VectorTraceApp:
     # ---------------------------------------------------------
 
     def crop_image(self):
-
-        messagebox.showinfo(
-            "Crop Image",
-            "Crop functionality will be connected here."
-        )
+        if self.controller and hasattr(self.controller, "show_screen2"):
+            self.controller.show_screen2(self.image_path, self.image)
+        else:
+            messagebox.showinfo(
+                "Crop Image",
+                "Crop functionality will be connected here."
+            )
 
     # ---------------------------------------------------------
     # PROCESS
     # ---------------------------------------------------------
 
     def process_image(self):
-
-        messagebox.showinfo(
-            "Process / Vectorize",
-            "Image processing will be connected here."
-        )
+        if self.controller and hasattr(self.controller, "show_screen2"):
+            self.controller.show_screen2(self.image_path, self.image)
+        else:
+            messagebox.showinfo(
+                "Process / Vectorize",
+                "Image processing will be connected here."
+            )
 
 
 # -------------------------------------------------------------
-# RUN APPLICATION
+# RUN APPLICATION STANDALONE
 # -------------------------------------------------------------
 
 if __name__ == "__main__":
-
     root = tk.Tk()
-
-    app = VectorTraceApp(root)
-
+    app = FirstPage(root)
     root.mainloop()
