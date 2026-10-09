@@ -3,3 +3,4 @@ PyOpenGL
 PyQt5  # or tkinter / customtkinter 
 numpy 
 matplotlib 
+cv2

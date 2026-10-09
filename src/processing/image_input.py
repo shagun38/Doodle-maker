@@ -4,11 +4,8 @@ import os
 import cv2
 
 SUPPORTED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
-
-
 MAX_WIDTH = 4096
 MAX_HEIGHT = 4096
-
 
 def load_image(image_path):
     # check whether the provided path exists
