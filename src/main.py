@@ -10,6 +10,7 @@ from processing.path_tracing import trace_skeleton_paths
 from processing.simplification import simplify_paths
 from processing.vectorization import vectorize_paths
 from processing.rendering import render_vectors
+from processing.export import save_as_svg, save_as_png
 
 def show_image(window_name,image,max_width=1200,max_height=800):
     height, width = image.shape[:2]
@@ -27,7 +28,7 @@ def show_image(window_name,image,max_width=1200,max_height=800):
 # -------------------------
 # Input
 # -------------------------
-image_path = "./test-images/test1.jpeg"
+image_path = "./test-images/test8.jpeg"
 image_data = load_image(image_path)
 image = image_data["image"]
 
@@ -59,13 +60,13 @@ closed_mask = close_mask_gaps(cleaned_mask,kernel_size=5)
 # Skeletonization
 # -------------------------
 
-skeleton = skeletonize_mask(closed_mask)
+# skeleton = skeletonize_mask(closed_mask)
 
 # -------------------------
 # path tracking
 # -------------------------
-paths = trace_skeleton_paths(skeleton)
-simplified_paths = simplify_paths(paths,epsilon_ratio=0.01)
+paths = trace_skeleton_paths(closed_mask)
+simplified_paths = simplify_paths(paths, max_deviation=0.5)
 
 # -------------------------
 # Vectorization
@@ -79,6 +80,12 @@ vectors = vectorize_paths(simplified_paths)
 vector_image = render_vectors(vectors,image_data["width"],image_data["height"])
 
 show_image("vector output",vector_image)
+
+# -------------------------
+# Export Final File
+# -------------------------
+save_as_svg(simplified_paths, image_data["width"], image_data["height"], "final_doodle.svg")
+save_as_png(simplified_paths, image_data["width"], image_data["height"], "final_doodle.png")
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
