@@ -4,15 +4,13 @@ from PIL import Image, ImageTk
 import os
 
 
-class FirstPage:
+
+class FirstPage(tk.Frame):
     def __init__(self, root, controller=None):
+        super().__init__(root)
+
         self.root = root
         self.controller = controller
-        
-        if isinstance(self.root, tk.Tk):
-            self.root.title("Vector Trace — Doodle to Vector")
-            self.root.geometry("1000x700")
-            self.root.minsize(1000,700)
 
         self.image = None
         self.preview_image = None
@@ -72,7 +70,7 @@ class FirstPage:
     def create_page(self):
 
         # Main container
-        main_frame = ttk.Frame(self.root, padding=30)
+        main_frame = ttk.Frame(self, padding=30)
         main_frame.pack(fill="both", expand=True)
 
         # -----------------------------------------------------

@@ -28,7 +28,7 @@ def show_image(window_name,image,max_width=1200,max_height=800):
 # -------------------------
 # Input
 # -------------------------
-image_path = "./test-images/test8.jpeg"
+image_path = "./test-images/test10.jpeg"
 image_data = load_image(image_path)
 image = image_data["image"]
 

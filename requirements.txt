@@ -1,6 +1,5 @@
 opencv-contrib-python
-numpy
-scipy
 PyOpenGL
+PyQt5
+numpy
 matplotlib
-Pillow
