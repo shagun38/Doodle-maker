@@ -2,27 +2,34 @@ import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk, ImageOps, ImageFilter
+from PIL import ImageDraw
+from Integration.pipeline import process_pil_image
+from processing.svg_export import export_svg
+
 
 
 class Screen4Frame(ttk.Frame):
-    def __init__(self, parent, controller=None, image=None):
+
+    def __init__(self, parent, controller=None, image=None, result=None):
         super().__init__(parent)
         self.controller = controller
 
-        # Working image from Screen 2
-        self.original_image = image if image else self.create_dummy_image()
+        self.original_image = (
+            image if image is not None else self.create_dummy_image()
+        )
+        self.pipeline_result = result
         self.vector_image = None
-        
-        # Display image references to prevent Tkinter garbage collection
+
         self.tk_orig_preview = None
         self.tk_vec_preview = None
 
-        # User Options
         self.remove_bg_var = tk.BooleanVar(value=False)
         self.export_format_var = tk.StringVar(value="SVG")
 
         self.setup_ui()
         self.after(100, self.process_and_update)
+
+
 
     # ---------------------------------------------------------
     # UI SETUP
@@ -162,41 +169,63 @@ class Screen4Frame(ttk.Frame):
     # ---------------------------------------------------------
     # VECTOR PROCESSING & PREVIEW UPDATE
     # ---------------------------------------------------------
+   
     def process_and_update(self, *args):
         if self.original_image is None:
             return
 
-        # 1. Convert image to clean black & white line art (Vector style)
-        gray_img = self.original_image.convert("L")
-        
-        # Apply thresholding to create sharp doodle edges
-        threshold = 180
-        bw_img = gray_img.point(lambda p: 255 if p > threshold else 0)
+        try:
+            # Run the actual vectorization pipeline once.
+            if self.pipeline_result is None:
+                self.pipeline_result = process_pil_image(
+                    self.original_image
+                )
 
-        if self.remove_bg_var.get():
-            # Create RGBA image with transparent background for white pixels
-            rgba_img = Image.new("RGBA", bw_img.size, (255, 255, 255, 0))
-            pixels = bw_img.load()
-            rgba_pixels = rgba_img.load()
+            result = self.pipeline_result
 
-            for y in range(bw_img.height):
-                for x in range(bw_img.width):
-                    if pixels[x, y] == 0:  # Black lines
-                        rgba_pixels[x, y] = (0, 0, 0, 255)
-            
-            self.vector_image = rgba_img
-            self.vec_frame.config(bg="#e0e0e0")  # Show grayish frame background for transparency preview
-            self.vec_canvas.config(bg="#e0e0e0")
-        else:
-            self.vector_image = bw_img.convert("RGB")
-            self.vec_frame.config(bg="#ffffff")
-            self.vec_canvas.config(bg="#ffffff")
+            if self.remove_bg_var.get():
+                # Draw the actual vector paths on a transparent canvas.
+                transparent = Image.new(
+                    "RGBA",
+                    (result["width"], result["height"]),
+                    (0, 0, 0, 0),
+                )
+                draw = ImageDraw.Draw(transparent)
 
-        # 2. Render Left (Original) Canvas
-        self.render_canvas_image(self.orig_canvas, self.original_image, is_original=True)
+                for vector in result["vectors"]:
+                    points = vector.get("points", [])
+                    width = max(1, round(vector.get("width", 3)))
 
-        # 3. Render Right (Vector Result) Canvas
-        self.render_canvas_image(self.vec_canvas, self.vector_image, is_original=False)
+                    if len(points) >= 2:
+                        draw.line(
+                            [tuple(point) for point in points],
+                            fill=(0, 0, 0, 255),
+                            width=width,
+                            joint="curve",
+                        )
+
+                self.vector_image = transparent
+                self.vec_canvas.config(bg="#e0e0e0")
+            else:
+                self.vector_image = result["preview"].copy()
+                self.vec_canvas.config(bg="#ffffff")
+
+            self.render_canvas_image(
+                self.orig_canvas,
+                self.original_image,
+                is_original=True,
+            )
+            self.render_canvas_image(
+                self.vec_canvas,
+                self.vector_image,
+                is_original=False,
+            )
+
+        except Exception as exc:
+            messagebox.showerror(
+                "Processing Error",
+                f"Could not process the image:\n{exc}",
+            )
 
     def render_canvas_image(self, canvas, img, is_original=True):
         canvas.update_idletasks()
@@ -253,38 +282,22 @@ class Screen4Frame(ttk.Frame):
                 except Exception as e:
                     messagebox.showerror("Export Error", f"Failed to export PNG:\n{str(e)}")
 
+   
     def export_as_svg(self, output_path):
-        """Converts the black line doodle into clean SVG vector path elements."""
-        bw_base = self.original_image.convert("L").point(lambda p: 255 if p > 180 else 0)
-        width, height = bw_base.size
+        if self.pipeline_result is None:
+            raise ValueError(
+                "Please process the image before exporting."
+            )
 
-        svg_lines = [
-            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}">\n'
-        ]
+        result = self.pipeline_result
 
-        # Add white background rect if background removal is false
-        if not self.remove_bg_var.get():
-            svg_lines.append(f'  <rect width="{width}" height="{height}" fill="#ffffff"/>\n')
-
-        # Run-length vector encoding for black stroke pixels
-        pixels = bw_base.load()
-        rect_paths = []
-
-        for y in range(height):
-            x = 0
-            while x < width:
-                if pixels[x, y] == 0:  # Black stroke pixel
-                    start_x = x
-                    while x < width and pixels[x, y] == 0:
-                        x += 1
-                    rect_paths.append(f'<rect x="{start_x}" y="{y}" width="{x - start_x}" height="1" fill="#000000"/>')
-                else:
-                    x += 1
-
-        svg_lines.append("  " + "\n  ".join(rect_paths) + "\n</svg>")
-
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.writelines(svg_lines)
+        export_svg(
+            vectors=result["vectors"],
+            width=result["width"],
+            height=result["height"],
+            output_path=output_path,
+            transparent=self.remove_bg_var.get(),
+        )
 
     # ---------------------------------------------------------
     # HELPERS & NAVIGATION
