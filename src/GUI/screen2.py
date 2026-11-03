@@ -300,7 +300,7 @@ class Screen2Frame(ttk.Frame):
             style="Action.TButton",
             width=12,
             command=self.go_back
-        )
+        )   
         self.back_button.pack(side="left")
 
         self.continue_button = ttk.Button(
@@ -588,12 +588,15 @@ class Screen2Frame(ttk.Frame):
     # ---------------------------------------------------------
 
     def go_back(self):
+        print("========== SCREEN 2 BACK CLICKED ==========")
 
-        if self.controller and hasattr(
-            self.controller,
-            "show_screen1"
-        ):
+        if self.controller:
+            print("Controller exists")
+            print("Opening Screen 1")
+
             self.controller.show_screen1()
+        else:
+            print("Controller is missing")
 
     def go_continue(self):
 

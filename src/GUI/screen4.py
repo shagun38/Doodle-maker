@@ -1,22 +1,23 @@
-import os
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from PIL import Image, ImageTk, ImageOps, ImageFilter
-from PIL import ImageDraw
-from Integration.pipeline import process_pil_image
-from processing.svg_export import export_svg
 
+from PIL import Image, ImageTk, ImageDraw
+
+from processing.svg_export import export_svg
 
 
 class Screen4Frame(ttk.Frame):
 
     def __init__(self, parent, controller=None, image=None, result=None):
         super().__init__(parent)
+
         self.controller = controller
 
         self.original_image = (
             image if image is not None else self.create_dummy_image()
         )
+
         self.pipeline_result = result
         self.vector_image = None
 
@@ -27,9 +28,9 @@ class Screen4Frame(ttk.Frame):
         self.export_format_var = tk.StringVar(value="SVG")
 
         self.setup_ui()
+
+        # Display the result received from Screen 3
         self.after(100, self.process_and_update)
-
-
 
     # ---------------------------------------------------------
     # UI SETUP
@@ -77,27 +78,68 @@ class Screen4Frame(ttk.Frame):
         preview_grid.rowconfigure(1, weight=1)
 
         # --- LEFT: ORIGINAL DOODLE ---
-        orig_lbl = ttk.Label(preview_grid, text="ORIGINAL", style="Section.TLabel")
+        orig_lbl = ttk.Label(
+            preview_grid,
+            text="ORIGINAL",
+            style="Section.TLabel"
+        )
         orig_lbl.grid(row=0, column=0, pady=(0, 8))
 
-        self.orig_frame = tk.Frame(preview_grid, bg="#eeeeee", relief="solid", borderwidth=1)
-        self.orig_frame.grid(row=1, column=0, sticky="nsew", padx=5)
+        self.orig_frame = tk.Frame(
+            preview_grid,
+            bg="#eeeeee",
+            relief="solid",
+            borderwidth=1
+        )
+        self.orig_frame.grid(
+            row=1,
+            column=0,
+            sticky="nsew",
+            padx=5
+        )
 
-        self.orig_canvas = tk.Canvas(self.orig_frame, bg="#eeeeee", highlightthickness=0)
+        self.orig_canvas = tk.Canvas(
+            self.orig_frame,
+            bg="#eeeeee",
+            highlightthickness=0
+        )
         self.orig_canvas.pack(fill="both", expand=True)
 
         # --- CENTER: ARROW ---
-        arrow_lbl = ttk.Label(preview_grid, text="➔", font=("Segoe UI", 24, "bold"), foreground="#666666")
+        arrow_lbl = ttk.Label(
+            preview_grid,
+            text="➔",
+            font=("Segoe UI", 24, "bold"),
+            foreground="#666666"
+        )
         arrow_lbl.grid(row=1, column=1, padx=15)
 
         # --- RIGHT: VECTOR RESULT ---
-        vec_lbl = ttk.Label(preview_grid, text="VECTOR RESULT", style="Section.TLabel")
+        vec_lbl = ttk.Label(
+            preview_grid,
+            text="VECTOR RESULT",
+            style="Section.TLabel"
+        )
         vec_lbl.grid(row=0, column=2, pady=(0, 8))
 
-        self.vec_frame = tk.Frame(preview_grid, bg="#ffffff", relief="solid", borderwidth=1)
-        self.vec_frame.grid(row=1, column=2, sticky="nsew", padx=5)
+        self.vec_frame = tk.Frame(
+            preview_grid,
+            bg="#ffffff",
+            relief="solid",
+            borderwidth=1
+        )
+        self.vec_frame.grid(
+            row=1,
+            column=2,
+            sticky="nsew",
+            padx=5
+        )
 
-        self.vec_canvas = tk.Canvas(self.vec_frame, bg="#ffffff", highlightthickness=0)
+        self.vec_canvas = tk.Canvas(
+            self.vec_frame,
+            bg="#ffffff",
+            highlightthickness=0
+        )
         self.vec_canvas.pack(fill="both", expand=True)
 
         # -----------------------------------------------------
@@ -123,7 +165,11 @@ class Screen4Frame(ttk.Frame):
         fmt_frame = ttk.Frame(options_frame)
         fmt_frame.pack(anchor="w")
 
-        fmt_label = ttk.Label(fmt_frame, text="Download as: ", style="Normal.TLabel")
+        fmt_label = ttk.Label(
+            fmt_frame,
+            text="Download as: ",
+            style="Normal.TLabel"
+        )
         fmt_label.pack(side="left", padx=(0, 10))
 
         svg_radio = ttk.Radiobutton(
@@ -162,73 +208,109 @@ class Screen4Frame(ttk.Frame):
             text="↓ DOWNLOAD",
             style="Upload.TButton",
             width=16,
-            command=self.download_file
+            command=self.download_file,
+            state="disabled"
         )
         self.download_button.pack(side="right")
 
     # ---------------------------------------------------------
-    # VECTOR PROCESSING & PREVIEW UPDATE
+    # RESULT DISPLAY
     # ---------------------------------------------------------
-   
     def process_and_update(self, *args):
+        """
+        Display the already processed result received from Screen 3.
+
+        No vectorization or pipeline processing happens here.
+        """
+
         if self.original_image is None:
             return
 
         try:
-            # Run the actual vectorization pipeline once.
             if self.pipeline_result is None:
-                self.pipeline_result = process_pil_image(
-                    self.original_image
+                self.download_button.config(state="disabled")
+
+                messagebox.showerror(
+                    "Result Unavailable",
+                    "No processed result was received.\n"
+                    "Please return and process the image again.",
+                    parent=self
                 )
+                return
 
             result = self.pipeline_result
 
+            # ---------------------------------------------
+            # TRANSPARENT BACKGROUND PREVIEW
+            # ---------------------------------------------
             if self.remove_bg_var.get():
-                # Draw the actual vector paths on a transparent canvas.
+
                 transparent = Image.new(
                     "RGBA",
                     (result["width"], result["height"]),
-                    (0, 0, 0, 0),
+                    (0, 0, 0, 0)
                 )
+
                 draw = ImageDraw.Draw(transparent)
 
                 for vector in result["vectors"]:
+
                     points = vector.get("points", [])
-                    width = max(1, round(vector.get("width", 3)))
+                    width = max(
+                        1,
+                        round(vector.get("width", 3))
+                    )
 
                     if len(points) >= 2:
                         draw.line(
                             [tuple(point) for point in points],
                             fill=(0, 0, 0, 255),
                             width=width,
-                            joint="curve",
+                            joint="curve"
                         )
 
                 self.vector_image = transparent
                 self.vec_canvas.config(bg="#e0e0e0")
+
+            # ---------------------------------------------
+            # NORMAL VECTOR PREVIEW
+            # ---------------------------------------------
             else:
                 self.vector_image = result["preview"].copy()
                 self.vec_canvas.config(bg="#ffffff")
 
+            # Display original image
             self.render_canvas_image(
                 self.orig_canvas,
                 self.original_image,
-                is_original=True,
+                is_original=True
             )
+
+            # Display vector result
             self.render_canvas_image(
                 self.vec_canvas,
                 self.vector_image,
-                is_original=False,
+                is_original=False
             )
+
+            self.download_button.config(state="normal")
 
         except Exception as exc:
+            self.download_button.config(state="disabled")
+
             messagebox.showerror(
-                "Processing Error",
-                f"Could not process the image:\n{exc}",
+                "Display Error",
+                f"Could not display the vector result:\n{exc}",
+                parent=self
             )
 
+    # ---------------------------------------------------------
+    # CANVAS IMAGE RENDERING
+    # ---------------------------------------------------------
     def render_canvas_image(self, canvas, img, is_original=True):
+
         canvas.update_idletasks()
+
         cw = canvas.winfo_width()
         ch = canvas.winfo_height()
 
@@ -236,54 +318,118 @@ class Screen4Frame(ttk.Frame):
             cw, ch = 350, 300
 
         img_copy = img.copy()
-        img_copy.thumbnail((cw - 20, ch - 20), Image.Resampling.LANCZOS)
+
+        img_copy.thumbnail(
+            (cw - 20, ch - 20),
+            Image.Resampling.LANCZOS
+        )
 
         tk_img = ImageTk.PhotoImage(img_copy)
-        
+
         if is_original:
             self.tk_orig_preview = tk_img
         else:
             self.tk_vec_preview = tk_img
 
         canvas.delete("all")
+
         x_off = (cw - img_copy.width) // 2
         y_off = (ch - img_copy.height) // 2
-        canvas.create_image(x_off, y_off, anchor="nw", image=tk_img)
+
+        canvas.create_image(
+            x_off,
+            y_off,
+            anchor="nw",
+            image=tk_img
+        )
 
     # ---------------------------------------------------------
     # DOWNLOAD / EXPORT LOGIC
     # ---------------------------------------------------------
     def download_file(self):
+
+        if self.vector_image is None:
+            messagebox.showerror(
+                "Export Error",
+                "No vector result is available to download.",
+                parent=self
+            )
+            return
+
         selected_fmt = self.export_format_var.get().upper()
 
+        # ---------------------------------------------
+        # SVG EXPORT
+        # ---------------------------------------------
         if selected_fmt == "SVG":
+
             file_path = filedialog.asksaveasfilename(
                 title="Save Vector Image",
                 defaultextension=".svg",
-                filetypes=[("SVG Vector Image", "*.svg"), ("All Files", "*.*")]
+                filetypes=[
+                    ("SVG Vector Image", "*.svg"),
+                    ("All Files", "*.*")
+                ]
             )
+
             if file_path:
                 try:
                     self.export_as_svg(file_path)
-                    messagebox.showinfo("Success", f"Vector saved successfully as SVG!\n\nLocation: {file_path}")
-                except Exception as e:
-                    messagebox.showerror("Export Error", f"Failed to export SVG:\n{str(e)}")
 
+                    messagebox.showinfo(
+                        "Success",
+                        f"Vector saved successfully as SVG!\n\n"
+                        f"Location: {file_path}",
+                        parent=self
+                    )
+
+                except Exception as exc:
+                    messagebox.showerror(
+                        "Export Error",
+                        f"Failed to export SVG:\n{str(exc)}",
+                        parent=self
+                    )
+
+        # ---------------------------------------------
+        # PNG EXPORT
+        # ---------------------------------------------
         elif selected_fmt == "PNG":
+
             file_path = filedialog.asksaveasfilename(
                 title="Save Image",
                 defaultextension=".png",
-                filetypes=[("PNG Image", "*.png"), ("All Files", "*.*")]
+                filetypes=[
+                    ("PNG Image", "*.png"),
+                    ("All Files", "*.*")
+                ]
             )
+
             if file_path:
                 try:
-                    self.vector_image.save(file_path, format="PNG")
-                    messagebox.showinfo("Success", f"Image saved successfully as PNG!\n\nLocation: {file_path}")
-                except Exception as e:
-                    messagebox.showerror("Export Error", f"Failed to export PNG:\n{str(e)}")
+                    self.vector_image.save(
+                        file_path,
+                        format="PNG"
+                    )
 
-   
+                    messagebox.showinfo(
+                        "Success",
+                        f"Image saved successfully as PNG!\n\n"
+                        f"Location: {file_path}",
+                        parent=self
+                    )
+
+                except Exception as exc:
+                    messagebox.showerror(
+                        "Export Error",
+                        f"Failed to export PNG:\n{str(exc)}",
+                        parent=self
+                    )
+
+    # ---------------------------------------------------------
+    # SVG EXPORT HELPER
+    # ---------------------------------------------------------
     def export_as_svg(self, output_path):
+
         if self.pipeline_result is None:
             raise ValueError(
                 "Please process the image before exporting."
@@ -296,7 +442,7 @@ class Screen4Frame(ttk.Frame):
             width=result["width"],
             height=result["height"],
             output_path=output_path,
-            transparent=self.remove_bg_var.get(),
+            transparent=self.remove_bg_var.get()
         )
 
     # ---------------------------------------------------------
@@ -304,40 +450,117 @@ class Screen4Frame(ttk.Frame):
     # ---------------------------------------------------------
     def create_dummy_image(self):
         """Generates a fallback doodle for standalone testing."""
-        img = Image.new("RGB", (400, 300), color="white")
-        from PIL import ImageDraw
+
+        img = Image.new(
+            "RGB",
+            (400, 300),
+            color="white"
+        )
+
         draw = ImageDraw.Draw(img)
-        draw.ellipse([100, 50, 300, 250], outline="black", width=5)
-        draw.line([150, 150, 250, 150], fill="black", width=5)
+
+        draw.ellipse(
+            [100, 50, 300, 250],
+            outline="black",
+            width=5
+        )
+
+        draw.line(
+            [150, 150, 250, 150],
+            fill="black",
+            width=5
+        )
+
         return img
 
     def go_back(self):
+        """Navigate back to Screen 3."""
+
         if self.controller and hasattr(self.controller, "show_screen3"):
-            self.controller.show_screen3()
+            self.controller.show_screen3(
+                image=self.original_image,
+                result=self.pipeline_result
+            )
 
 
 # -------------------------------------------------------------
 # STANDALONE TEST
 # -------------------------------------------------------------
 if __name__ == "__main__":
+
     root = tk.Tk()
     root.title("Vector Trace — Screen 4")
     root.geometry("1000x700")
 
     style = ttk.Style()
+
     try:
         style.theme_use("clam")
-    except:
+    except tk.TclError:
         pass
 
-    style.configure("Title.TLabel", font=("Segoe UI", 24, "bold"))
-    style.configure("Subtitle.TLabel", font=("Segoe UI", 11))
-    style.configure("Section.TLabel", font=("Segoe UI", 12, "bold"))
-    style.configure("Normal.TLabel", font=("Segoe UI", 10))
-    style.configure("Upload.TButton", font=("Segoe UI", 11, "bold"), padding=(10, 6))
-    style.configure("Action.TButton", font=("Segoe UI", 10), padding=(8, 4))
+    style.configure(
+        "Title.TLabel",
+        font=("Segoe UI", 24, "bold")
+    )
 
-    screen4 = Screen4Frame(root, controller=None)
+    style.configure(
+        "Subtitle.TLabel",
+        font=("Segoe UI", 11)
+    )
+
+    style.configure(
+        "Section.TLabel",
+        font=("Segoe UI", 12, "bold")
+    )
+
+    style.configure(
+        "Normal.TLabel",
+        font=("Segoe UI", 10)
+    )
+
+    style.configure(
+        "Upload.TButton",
+        font=("Segoe UI", 11, "bold"),
+        padding=(10, 6)
+    )
+
+    style.configure(
+        "Action.TButton",
+        font=("Segoe UI", 10),
+        padding=(8, 4)
+    )
+
+    # Dummy result for testing the Screen 4 layout
+    dummy_image = Image.new("RGB", (400, 300), "white")
+
+    dummy_draw = ImageDraw.Draw(dummy_image)
+    dummy_draw.ellipse(
+        [100, 50, 300, 250],
+        outline="black",
+        width=5
+    )
+
+    dummy_draw.line(
+        [150, 150, 250, 150],
+        fill="black",
+        width=5
+    )
+
+    dummy_result = {
+        "preview": dummy_image,
+        "vectors": [],
+        "width": 400,
+        "height": 300
+    }
+
+    screen4 = Screen4Frame(
+        root,
+        controller=None,
+        image=dummy_image,
+        result=dummy_result
+    )
+
     screen4.pack(fill="both", expand=True)
 
     root.mainloop()

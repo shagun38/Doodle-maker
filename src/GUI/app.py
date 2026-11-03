@@ -1,6 +1,6 @@
 
+from email.mime import image
 import tkinter as tk
-from tkinter import messagebox
 import os
 import sys
 
@@ -44,17 +44,20 @@ class DoodleMakerApp:
             self.current_screen = None
 
     def show_screen1(self):
-        """Display the image upload screen."""
+        print("APP: Opening Screen 1")
+
         self.clear_screen()
 
         self.current_screen = FirstPage(
             self.root,
             controller=self
         )
+
         self.current_screen.pack(fill="both", expand=True)
 
     def show_screen2(self, image_path=None, image=None):
-        """Display the crop and adjustment screen."""
+        print("APP: Opening Screen 2")
+
         self.clear_screen()
 
         if image_path is not None:
@@ -63,25 +66,33 @@ class DoodleMakerApp:
         if image is not None:
             self.original_image = image
 
+        self.processing_result = None
+        self.adjusted_image = None
+
         self.current_screen = Screen2Frame(
             self.root,
             controller=self,
             image_path=self.image_path,
             image=self.original_image
         )
+
         self.current_screen.pack(fill="both", expand=True)
 
-    def show_screen3(self, image=None):
+    def show_screen3(self, image=None, result=None):
         """Display the processing screen."""
         self.clear_screen()
 
         if image is not None:
             self.adjusted_image = image
 
+        if result is not None:
+            self.processing_result = result
+
         self.current_screen = Screen3Frame(
             self.root,
             controller=self,
-            image=self.adjusted_image
+            image=self.adjusted_image,
+            result=self.processing_result
         )
         self.current_screen.pack(fill="both", expand=True)
 
@@ -94,6 +105,9 @@ class DoodleMakerApp:
 
         if result is not None:
             self.processing_result = result
+
+        print("DEBUG: Result received by app:", result is not None)
+        print("DEBUG: Cached result:", self.processing_result is not None)
 
         self.current_screen = Screen4Frame(
             self.root,
