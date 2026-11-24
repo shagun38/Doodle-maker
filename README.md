@@ -284,7 +284,7 @@ The GUI Screen 4 uses a save dialog and lets the user choose a destination and f
 
 ---
 
-## 15. Does this project use machine learning?
+## 13. Does this project use machine learning?
 
 **No. The current implementation does not train a machine-learning model.**
 
@@ -294,7 +294,7 @@ A future version could use machine learning for tasks such as doodle classificat
 
 ---
 
-## 16. Quick start
+## 14. Quick start
 
 For a quick run after installing dependencies:
 
@@ -316,7 +316,7 @@ Expected result:
 
 ---
 
-## 17. Project summary
+## 15. Project summary
 
 VectorTrace is a Python-based computer-graphics project that converts raster doodle images into vector-style representations. Its processing pipeline combines image enhancement, adaptive thresholding, connected-component filtering, morphological operations, contour extraction, path simplification, spline smoothing, polyline representation and SVG/PNG export.
 
